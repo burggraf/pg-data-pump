@@ -1,7 +1,39 @@
 import Database from 'better-sqlite3';
 import { Client } from 'pg';
-// import { detectTypes } from './type-helpers';
 import { analyzeRowResults, analyzeRow } from './importHelpers';
+import * as fs from 'fs';
+
+// get command-line arguments
+const args = process.argv.slice(2);
+const configFile = args[0];
+if (!configFile) {
+    console.log('syntax: postgresql-datapump <configFile>');
+    console.log('');
+    console.log('configFile: json file with connection info');
+    console.log(`    
+    sqlite example:
+    {
+        "type": "sqlite",
+        "input": "path/to/file.db",
+    }
+    csv example:
+    {
+        "type": "csv",
+        "input": "path/to/file.csv",
+    }
+    `);
+    process.exit(1);
+}
+// read contents of config file
+let config;
+try {
+    config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+} catch (err: any) {
+    console.log('error reading config file: ', configFile);
+    console.log('(must be a valid json file)');
+    process.exit(1);
+}
+
 
 const quoteRow = (row: object) => {
     const values = Object.values(row);
@@ -31,15 +63,6 @@ try {
 
 const importTable = async (table: string) => {
     console.log('importing', table);
-    // const schema = db.prepare(`SELECT sql FROM sqlite_schema WHERE name = '${table}'`).all()[0].sql.replace("CREATE TABLE ","CREATE TABLE IF NOT EXISTS ") + ';';
-    // try {
-    //     console.log('create table:', table);
-    //     const res = await client.query(schema);
-    //     //console.log('schema res', res);
-    //     // { name: 'brianc', email: 'brian.m.carlson@gmail.com' }
-    //   } catch (err) {
-    //     console.log(err)
-    //   }
 
     const schemaRows = db.prepare(`select * from ${table} limit 100000`).all();
     const fieldsHash = {};
@@ -47,20 +70,15 @@ const importTable = async (table: string) => {
         analyzeRow(fieldsHash, row);
       });  
     const fieldsArray = analyzeRowResults(fieldsHash);
-    // console.log('fieldsHash', fieldsHash);
-    // console.log('fieldsArray', fieldsArray);
     let schema = 'CREATE TABLE IF NOT EXISTS ' + table + ' (\n';
     fieldsArray.map((field: any) => {
         schema += '  "' + field.sourceName + '" ' + field.type + ',\n';
         return null;
     })  
     schema = schema.substring(0, schema.length - 2) + '\n);\n';
-    // console.log('schema', schema);
     try {
         console.log('create table:', table);
         const res = await client.query(schema);
-        //console.log('schema res', res);
-        // { name: 'brianc', email: 'brian.m.carlson@gmail.com' }
       } catch (err) {
         console.log(err)
       }
@@ -93,18 +111,6 @@ const importTable = async (table: string) => {
         count = await chunk(index);
     }
     console.log('done', index);
-
-
-
-    // try {
-    //     await client.end();
-    //     client = await new Client({ ssl: true });
-    //     await client.connect();
-    // } catch (err) {
-    //     console.log('error connecting', err);
-    //     process.exit(1);
-    // }
-    
 }
 
 const importTables = async (tables: string[]) => {
@@ -112,8 +118,7 @@ const importTables = async (tables: string[]) => {
         const tbl = tables.shift();
         console.log('table', tbl, typeof tbl);
         if (typeof tbl === 'string') {
-            //if (!tbl.startsWith('baseballdatabank') && tbl === 'retrosheet_event')
-                await importTable(tbl);
+            await importTable(tbl);
         }
     }
     client.end();
@@ -122,15 +127,7 @@ const importTables = async (tables: string[]) => {
 
 // get list of tables
 const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((table: any) => table.name);
-// console.log('tables', tables);
-// const tablename = 'retrosheet_park'; //tables[0].name;
 importTables(tables);
 
-// importTable(tablename);
-
-//db.exec('.mode quote');
-
-// const t = db.prepare(`SELECT * FROM ${tablename}`).all();
-// console.log('t', t);
 
 
