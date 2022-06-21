@@ -74,18 +74,6 @@ const importTable = async (table: string) => {
     console.log('done', index);
 }
 
-const importTables = async (tables: string[]) => {
-    while (tables.length > 0) {
-        const tbl = tables.shift();
-        console.log('table', tbl, typeof tbl);
-        if (typeof tbl === 'string') {
-            await importTable(tbl);
-        }
-    }
-    client.end();
-
-}
-
 const connectDB = async (config: any) => {
     db = new Database(config.input, {readonly: true, fileMustExist: true});
     client = new Client({ ssl: false });
@@ -96,9 +84,20 @@ const connectDB = async (config: any) => {
         process.exit(1);
     }
 }
-export const importAllTables = (config: any) => {
+export const importAllTables = async (config: any) => {
     // get list of tables
     connectDB(config);
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((table: any) => table.name);
-    importTables(tables);
+    while (tables.length > 0) {
+        const tbl = tables.shift();
+        if (typeof tbl === 'string' && (!config?.tables) || config?.tables.includes(tbl)) {
+            console.log('importing table', tbl);
+            await importTable(tbl);
+        } else {
+            console.log('skipping table not found in config.tables:', tbl);
+        }
+    }
+    client.end();
+
+
 }

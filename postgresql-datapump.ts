@@ -13,6 +13,8 @@ if (!configFile) {
     {
         "type": "sqlite",
         "input": "path/to/file.db",
+        "notes": "*** items below are optional ***",
+        "tables": ["table1", "table2"]
     }
     csv example:
     {
