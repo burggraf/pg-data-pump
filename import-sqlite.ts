@@ -1,6 +1,8 @@
-import Database from 'better-sqlite3';
-import { Client } from 'pg';
 import { analyzeRowResults, analyzeRow } from './importHelpers';
+import { connect as pgconnect } from './pg-client';
+import { connect as sqliteconnect } from './sqlite-client';
+let db: any
+let client: any;
 
 const quoteRow = (row: object) => {
     const values = Object.values(row);
@@ -18,9 +20,6 @@ const getColumns = (row: object) => {
         return Object.keys(row).join(',');
     else return '';
 }
-
-let db;
-let client;
 
 const importTable = async (table: string) => {
     console.log('importing', table);
@@ -74,19 +73,13 @@ const importTable = async (table: string) => {
     console.log('done', index);
 }
 
-const connectDB = async (config: any) => {
-    db = new Database(config.input, {readonly: true, fileMustExist: true});
-    client = new Client({ ssl: false });
-    try {
-        client.connect();
-    } catch (err) {
-        console.log('error connecting', err);
-        process.exit(1);
-    }
-}
 export const importAllTables = async (config: any) => {
     // get list of tables
-    connectDB(config);
+    db = await sqliteconnect(config);
+    client = await pgconnect(config);
+    if (!db || !client) {
+        process.exit(1);
+    }
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((table: any) => table.name);
     while (tables.length > 0) {
         const tbl = tables.shift();
@@ -98,6 +91,5 @@ export const importAllTables = async (config: any) => {
         }
     }
     client.end();
-
-
+    process.exit(0);
 }
