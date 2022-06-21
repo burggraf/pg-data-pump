@@ -1,5 +1,3 @@
-import Database from 'better-sqlite3';
-import { Client } from 'pg';
 import * as fs from 'fs';
 import { importAllTables } from './import-sqlite'
 
@@ -44,7 +42,7 @@ if (!config?.input) {
 
 switch (config.type) {
     case 'sqlite':
-        importAllTables(Database, Client, config);
+        importAllTables(config);
         break;
     case 'csv':
         // importCsv(config);

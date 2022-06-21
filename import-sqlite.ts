@@ -1,3 +1,5 @@
+import Database from 'better-sqlite3';
+import { Client } from 'pg';
 import { analyzeRowResults, analyzeRow } from './importHelpers';
 
 const quoteRow = (row: object) => {
@@ -84,7 +86,7 @@ const importTables = async (tables: string[]) => {
 
 }
 
-const connectDB = async (Database: any, Client: any, config: any) => {
+const connectDB = async (config: any) => {
     db = new Database(config.input, {readonly: true, fileMustExist: true});
     client = new Client({ ssl: false });
     try {
@@ -94,9 +96,9 @@ const connectDB = async (Database: any, Client: any, config: any) => {
         process.exit(1);
     }
 }
-export const importAllTables = (Database: any, Client: any, config: any) => {
+export const importAllTables = (config: any) => {
     // get list of tables
-    connectDB(Database, Client, config);
+    connectDB(config);
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((table: any) => table.name);
     importTables(tables);
 }
