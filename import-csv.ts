@@ -26,7 +26,7 @@ const parse_table = async (config: any, filename: string) => {
     newline: "",	// auto-detect
     quoteChar: '"',
     escapeChar: '"',
-    header: true,
+    header: config.header,
     transformHeader: undefined,
     preview: 0,
     encoding: "",
@@ -63,7 +63,9 @@ const parse_table = async (config: any, filename: string) => {
 
   let schema = 'CREATE TABLE IF NOT EXISTS "' + table + '" (\n';
   fieldsArray.map((field: any) => {
-      schema += '  "' + field.sourceName + '" ' + field.type + ',\n';
+      let fieldname = field.sourceName;
+      if (!config.header) fieldname = 'field' + fieldname;
+      schema += '  "' + fieldname + '" ' + field.type + ',\n';
       return null;
   })  
   // console.log('*****************************');
