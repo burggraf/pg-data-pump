@@ -44,10 +44,9 @@ const mainloop = async (configFile: any) => {
 
 
 const checkConfigFile = async () => {
-    console.log('*** checkConfigFile');
     const args = process.argv.slice(2);
     const configFile = args[0];    
-    console.log('configFile', configFile);
+    // console.log('configFile', configFile);
     if (!configFile) {
         await configBuilder(); 
      }

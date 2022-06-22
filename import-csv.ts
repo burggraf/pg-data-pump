@@ -10,7 +10,7 @@ const readCSV = async (filePath: string, papaConfig: any) => {
   const csvData = csvFile.toString()  
   return new Promise(resolve => {
     papaConfig.complete = (results: any) => {
-      console.log('Complete', results.data.length, 'records.'); 
+      // console.log('Complete', results.data.length, 'records.'); 
       resolve(results.data);
     }
     Papa.parse(csvData, papaConfig);
@@ -80,7 +80,7 @@ const parse_table = async (config: any, filename: string) => {
 }
 
 export const importCSVFiles = async (config: any) => {
-  console.log(config);
+  // console.log(config);
   // { type: 'csv', input: '.', tables: [ 'AllStarFull.csv' ] }
   // get list of files in input directory
   while (config.tables.length > 0) {
