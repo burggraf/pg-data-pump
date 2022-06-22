@@ -4,7 +4,7 @@
     "allowSyntheticDefaultImports": true
   },
   "files": [
-    "index.ts"
+    "pg-data-pump.ts"
   ]
 }
 
