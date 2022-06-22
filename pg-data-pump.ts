@@ -2,6 +2,7 @@ import * as fs from 'fs';
 
 import { configBuilder } from './config-builder';
 import { importAllTables } from './import-sqlite'
+import { importCSVFiles } from './import-csv';
 
 // get command-line arguments
 const args = process.argv.slice(2);
@@ -9,7 +10,6 @@ const configFile = args[0];
 
 
 const mainloop = async (configFile: any) => {
-    console.log('mainloop...');
     let config;
     try {
         config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
@@ -33,7 +33,7 @@ const mainloop = async (configFile: any) => {
             break;
         case 'csv':
             // importCsv(config);
-            console.log('csv not implemented yet');
+            importCSVFiles(config);
             break;
         default:
             console.log('config file must contain type (csv or sqlite)');

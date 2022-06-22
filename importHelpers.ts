@@ -84,8 +84,8 @@ export const detectType = (sample: any) =>{
   if (typeof sample === 'number') {sample2 = sample.toString();} else { sample2 = sample;}
   let retval = '';
 
-  if (typeof sample !== 'string' && sample === '') {
-      retval = 'text'
+  if (false && typeof sample !== 'string' && sample === '') {
+      retval = 'null'
     } else if (isPostgresTimestamp(sample) && +sample >= 31536000) { 
       retval = 'timestamp'
     } else if (isPostgresDate(sample)) {
@@ -115,6 +115,8 @@ export const detectType = (sample: any) =>{
         }
     } else if (typeof sample === 'string' && sample.length > 255) {
       retval = 'text'
+    } else if (sample === null) {
+      retval = 'null'
     } else {
       retval = 'text' // string
     }
@@ -164,16 +166,24 @@ export const determineWinner = (fieldTypes: any) =>{
       return 'numeric'
     } else if (fieldTypes.float) {
       return 'numeric'
-    } else if (fieldTypes.bigint) {
-        return 'bigint'
     } else if (fieldTypes.integer) {
       return 'integer'
+    } else if (fieldTypes.bigint) {
+      return 'bigint'
+    } else if (fieldTypes.smallint) {
+      return 'smallint'
+    } else if (fieldTypes.timestamp) {
+      return 'timestamp'
+    } else if (fieldTypes.datetime) {
+      return 'datetime'
+    } else if (fieldTypes.date) {
+      return 'date'
     } else if (fieldTypes.boolean) {
         return 'boolean'
     } else { // TODO: if keys.length > 1 then... what? always string? what about date + datetime?
-      console.log('undetermined field type');
-      console.log('keys', keys);
-      console.log('fieldTypes', fieldTypes);
+      // console.log('undetermined field type');
+      // console.log('keys', keys);
+      // console.log('fieldTypes', fieldTypes);
       if (fieldTypes[0] === 'null') return 'text'
       else return fieldTypes[0]
     }
