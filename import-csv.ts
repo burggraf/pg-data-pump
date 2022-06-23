@@ -87,7 +87,7 @@ const parse_table = async (config: any, filename: string) => {
 
   let index = 1;
   const columns = '"' + headers.join('","') + '"';;    
-  const chunk = async (index: number, limit: number = 100000) => {
+  const chunk = async (index: number, limit: number = 10000) => {
       const rows = allrows.slice(index, index + limit);
 
       //const rows = db.prepare(`select * from ${table} limit ${limit} offset ${index}`).all();
@@ -120,10 +120,10 @@ const parse_table = async (config: any, filename: string) => {
           return 0;
         }    
   }
-  let count = await chunk(index);
+  let count = await chunk(index, config.batch_size || 10000);
   while (count > 0) {
       index += count;
-      count = await chunk(index);
+      count = await chunk(index, config.batch_size || 10000);
   }
   console.log('done', index);
 

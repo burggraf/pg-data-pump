@@ -6,7 +6,7 @@ import { quoteRow, getColumns } from './utils';
 let db: any
 let client: any;
 
-const importTable = async (table: string) => {
+const importTable = async (table: string, config: any) => {
     console.log('importing', table);
 
     const schemaRows = db.prepare(`select * from ${table} limit 100000`).all();
@@ -30,7 +30,7 @@ const importTable = async (table: string) => {
 
     let index = 0;
     
-    const chunk = async (index: number, limit: number = 100000) => {
+    const chunk = async (index: number, limit: number = 10000) => {
         const rows = db.prepare(`select * from ${table} limit ${limit} offset ${index}`).all();
         const count = rows.length;
         console.log('count', count);
@@ -50,10 +50,10 @@ const importTable = async (table: string) => {
             return 0;
           }    
     }
-    let count = await chunk(index);
+    let count = await chunk(index, config.batch_size || 10000);
     while (count > 0) {
         index += count;
-        count = await chunk(index);
+        count = await chunk(index, config.batch_size || 10000);
     }
     console.log('done', index);
 }
@@ -70,7 +70,7 @@ export const importAllTables = async (config: any) => {
         const tbl = tables.shift();
         if (typeof tbl === 'string' && (!config?.tables) || config?.tables.includes(tbl)) {
             console.log('importing table', tbl);
-            await importTable(tbl);
+            await importTable(tbl, config);
         } else {
             console.log('skipping table not found in config.tables:', tbl);
         }
