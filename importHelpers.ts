@@ -180,6 +180,8 @@ export const determineWinner = (fieldTypes: any) =>{
       return 'date'
     } else if (fieldTypes.boolean) {
         return 'boolean'
+    } else if (fieldTypes.null) {
+        return 'text'
     } else { // TODO: if keys.length > 1 then... what? always string? what about date + datetime?
       // console.log('undetermined field type');
       // console.log('keys', keys);
