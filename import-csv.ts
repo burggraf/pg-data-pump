@@ -2,6 +2,7 @@ import { analyzeRowResults, analyzeRow } from './importHelpers';
 import { connect as pgconnect } from './pg-client';
 import Papa from 'papaparse';
 import * as fs from 'fs';
+import { quoteRow, getColumns } from './utils';
 
 let client: any;
 
@@ -50,10 +51,9 @@ const parse_table = async (config: any, filename: string) => {
   //const file = fs.createReadStream(config.input + '/' + filename);
   //console.log('file', file);
   // parse file
-  const schemaRows: any = await readCSV(config.input + '/' + filename, papaConfig);
-  //console.log(schemaRows[0]);
+  const allrows: any = await readCSV(config.input + '/' + filename, papaConfig);
   const fieldsHash = {};
-  schemaRows.map((row) => {
+  allrows.map((row) => {
       analyzeRow(fieldsHash, row);
     });  
   const fieldsArray = analyzeRowResults(fieldsHash);
@@ -62,9 +62,11 @@ const parse_table = async (config: any, filename: string) => {
   const table = filename.substring(0, filename.length - 4);
 
   let schema = 'CREATE TABLE IF NOT EXISTS "' + table + '" (\n';
+  const headers = [];
   fieldsArray.map((field: any) => {
       let fieldname = field.sourceName;
       if (!config.header) fieldname = 'field' + fieldname;
+      headers.push(fieldname);
       schema += '  "' + fieldname + '" ' + field.type + ',\n';
       return null;
   })  
@@ -75,6 +77,56 @@ const parse_table = async (config: any, filename: string) => {
   // console.log('*****************************');
   schema = schema.substring(0, schema.length - 2) + '\n);\n';
   console.log('schema', schema);
+
+  try {
+    console.log('create table:', table);
+    const res = await client.query(schema);
+  } catch (err) {
+    console.log(err)
+  }
+
+  let index = 1;
+  const columns = '"' + headers.join('","') + '"';;    
+  const chunk = async (index: number, limit: number = 100000) => {
+      const rows = allrows.slice(index, index + limit);
+
+      //const rows = db.prepare(`select * from ${table} limit ${limit} offset ${index}`).all();
+      const count = rows.length;
+      console.log('count', count);
+      if (rows.length === 0) {
+          return count;
+      }
+      // console.log('rows', rows);
+      for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          if (Object.keys(row).length !== headers.length) {
+            console.log(`SKIPPING ROW WITH ${Object.keys(row).length} KEYS (EXPECTED ${headers.length})`);
+            console.log(row);
+            // remove row from array
+            rows.splice(i, 1);
+          }
+      }
+      const sql = `insert into "${table}" (${columns}) values 
+          ${
+              rows.map((row:object) => { 
+                  return '(' + quoteRow(row) + ')';
+              })
+          };`;
+        try {
+          const res = await client.query(sql);
+          return count;
+        } catch (err) {
+          console.log(err)
+          return 0;
+        }    
+  }
+  let count = await chunk(index);
+  while (count > 0) {
+      index += count;
+      count = await chunk(index);
+  }
+  console.log('done', index);
+
   // Papa.parse(file, papaConfig);
   client.end();
   //process.exit(0);
